@@ -1,56 +1,37 @@
 <template>
-
   <div>
 
-    <ScoreBoard :winCount="this.winCount" :loseCount="this.loseCount" />
+    <template v-if="question">
 
-    <template v-if="this.question">
+    <ScoreBoard :winCount="winCount" :loseCount="loseCount" />
 
-      <h1 v-html="this.question">
-      </h1>
+    <!-- Category Selector -->
+    <select class="select" v-model="selectedCategory" @change="getNewQuestion">
+      <option v-for="category in categories" :key="category.id" :value="category.id">
+        {{ category.name }}
+      </option>
+    </select>
+    
+      <h1 v-html="question"></h1>
 
-      <template v-for="(answer, index) in this.answers" :key="index">
-      <input
-        :disabled="this.answerSubmitted"
-        type="radio" 
-        name="options" 
-        :value="answer"
-        v-model="this.chosenAnswer"
-      >
-      
-      <label v-html="answer"></label><br>
+      <template v-for="(answer, index) in answers" :key="index">
+        <input :disabled="answerSubmitted" type="radio" name="options" :value="answer" v-model="chosenAnswer">
+        <label v-html="answer"></label><br>
       </template>
 
-      <button 
-      v-if="!this.answerSubmitted"
-      @click="this.submitAnswer()" 
-      class="send" 
-      type="button">Send
-      </button>
+      <button v-if="!answerSubmitted" @click="submitAnswer" class="send" type="button">Send</button>
 
-      <section v-if="this.answerSubmitted" class="result">
-
-        <h4 v-if="this.chosenAnswer == this.correctAnswer"
-        v-html="'&#9989; Congratulations, the answer ' + this.correctAnswer + ' is correct.'">
-        
-        </h4>
-
-        <h4 v-else
-        v-html="'&#10060; Im sorry, you picked the wrong answer. The correct is ' + this.correctAnswer + '.'">
-        
-        </h4>
-
-        <button @click="this.getNewQuestion()" class="send" type="button">Next Question</button>
-
+      <section v-if="answerSubmitted" class="result">
+        <h4 v-if="chosenAnswer == correctAnswer" v-html="'&#9989; Congratulations, the answer ' + correctAnswer + ' is correct.'"></h4>
+        <h4 v-else v-html="'&#10060; Sorry, you picked the wrong answer. The correct one is ' + correctAnswer + '.'"></h4>
+        <button @click="getNewQuestion" class="send" type="button">Next Question</button>
       </section>
-
     </template>
-
   </div>
 </template>
 
 <script>
-  
+
 import ScoreBoard from '@/components/ScoreBoard.vue'
 
 export default {
@@ -60,12 +41,14 @@ export default {
   },
   data() {
     return {
-      questions: [], //Questions Array
+      questions: [],
       currentQuestionIndex: 0,
       chosenAnswer: undefined,
       answerSubmitted: false,
       winCount: 0,
-      loseCount: 0
+      loseCount: 0,
+      categories: [], // Armazena as categorias
+      selectedCategory: null // Categoria selecionada
     }
   },
   computed: {
@@ -98,32 +81,42 @@ export default {
       }
     },
     getNewQuestion() {
-      // Completed all the questions, do the request again.
-      if (this.currentQuestionIndex >= this.questions.length - 1) {
-        this.axios.get('https://opentdb.com/api.php?amount=10')
-          .then((response) => {
-            this.questions = response.data.results;
-            this.currentQuestionIndex = 0;
-            this.resetQuestionState();
-          });
-      } else {
-        this.currentQuestionIndex++;
-        this.resetQuestionState();
+      let url = 'https://opentdb.com/api.php?amount=10';
+      if (this.selectedCategory) {
+        url += `&category=${this.selectedCategory}`;
       }
+      console.log("URL do Request:", url); // Debugging: Ver a URL final
+      this.axios.get(url)
+        .then((response) => {
+          this.questions = response.data.results;
+          this.currentQuestionIndex = 0;
+          this.resetQuestionState();
+        })
+        .catch(error => console.error("Erro ao buscar questões:", error));
     },
     resetQuestionState() {
       this.answerSubmitted = false;
       this.chosenAnswer = undefined;
+    },
+    fetchCategories() {
+      this.axios.get('https://opentdb.com/api_category.php')
+        .then((response) => {
+          this.categories = response.data.trivia_categories;
+          // Inicializa selectedCategory com o primeiro id de categoria para evitar problemas de seleção
+          if (this.categories.length > 0) {
+            this.selectedCategory = this.categories[0].id;
+          }
+        });
     }
   },
   created() {
+    this.fetchCategories();
     this.getNewQuestion();
   }
 }
 </script>
 
 <style lang="scss">
-
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -132,21 +125,32 @@ export default {
   color: #2c3e50;
   margin: 60px auto;
   max-width: 960px;
-  
-input[type=radio]{
-  margin: 12px 4px;
-}
 
-button.send{
-  margin-top: 12px;
-  height: 40px;
-  min-width: 120px;
-  padding: 0 16px;
-  color: #fff;
-  background-color: #1867c0;
-  border: 1px solid #06448a;
-  cursor: pointer;
-}
+  input[type=radio] {
+    margin: 12px 4px;
+  }
+
+  button.send {
+    margin-top: 12px;
+    height: 40px;
+    min-width: 120px;
+    padding: 0 16px;
+    color: #fff;
+    background-color: #1867c0;
+    border: 1px solid #06448a;
+    cursor: pointer;
+  }
+  
+  .select{
+    margin-top: 30px;
+    height: 40px;
+    min-width: 120px;
+    padding: 0 16px;
+    color: #fff;
+    background-color: #1867c0;
+    border: 1px solid #06448a;
+    cursor: pointer;
+  }
 
 }
 </style>
