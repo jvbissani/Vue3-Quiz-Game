@@ -9,16 +9,38 @@
 
       <template v-for="(answer, index) in this.answers" :key="index">
       <input
-      type="radio" 
-      name="options" 
-      :value="answer"
-      v-model="this.chosenAnswer"
+        :disabled="this.answerSubmitted"
+        type="radio" 
+        name="options" 
+        :value="answer"
+        v-model="this.chosenAnswer"
       >
       
       <label v-html="answer"></label><br>
       </template>
 
-      <button @click="this.submitAnswer()" class="send" type="button">Send</button>
+      <button 
+      v-if="!this.answerSubmitted"
+      @click="this.submitAnswer()" 
+      class="send" 
+      type="button">Send
+      </button>
+
+      <section v-if="this.answerSubmitted" class="result">
+
+        <h4 v-if="this.chosenAnswer == this.correctAnswer"
+        v-html="'&#9989; Congratulations, the answer ' + this.correctAnswer + ' is correct.'">
+        
+        </h4>
+
+        <h4 v-else
+        v-html="'&#10060; Im sorry, you picked the wrong answer. The correct is ' + this.correctAnswer + '.'">
+        
+        </h4>
+
+        <button @click="this.getNewQuestion()" class="send" type="button">Next Question</button>
+
+      </section>
 
     </template>
 
@@ -35,7 +57,8 @@ export default {
       question: undefined,
       incorrectAnswers: undefined,
       correctAnswer: undefined,
-      chosenAnswer: undefined
+      chosenAnswer: undefined,
+      answerSubmitted: false
     }
   },
   computed: {
@@ -51,24 +74,38 @@ export default {
       if(!this.chosenAnswer){
         alert('Pick one of the options.');
       }else{
+        this.answerSubmitted = true;
         if(this.chosenAnswer == this.correctAnswer){
-          alert('You got it right!');
+          console.log('You got it right!');
+
         }else{
-          alert('You got it wrong!');
+          console.log('You got it wrong!');
+
         }
       }
+    },
+
+    getNewQuestion(){
+
+      this.answerSubmitted = false;
+      this.chosenAnswer = undefined;
+      this.question = undefined;
+
+      this.axios
+      .get('https://opentdb.com/api.php?amount=1')
+      .then((response) => {
+      this.question = response.data.results[0].question;
+      this.incorrectAnswers = response.data.results[0].incorrect_answers;
+      this.correctAnswer = response.data.results[0].correct_answer;
+    })
+
     }
 
   },
   created(){
-    this.axios
-    .get('https://opentdb.com/api.php?amount=1')
-    .then((response) => {
-      this.question = response.data.results[0].question;
-      this.incorrectAnswers = response.data.results[0].incorrect_answers;
-      this.correctAnswer = response.data.results[0].correct_answer;
-    })  
-  }
+    this.getNewQuestion();
+    }  
+  
 
 }
 
