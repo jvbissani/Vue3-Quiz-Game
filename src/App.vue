@@ -54,19 +54,14 @@
 import ScoreBoard from '@/components/ScoreBoard.vue'
 
 export default {
-
   name: 'App',
   components: {
-    
     ScoreBoard
-
   },
-
-  data(){
-    return{
-      question: undefined,
-      incorrectAnswers: undefined,
-      correctAnswer: undefined,
+  data() {
+    return {
+      questions: [], //Questions Array
+      currentQuestionIndex: 0,
       chosenAnswer: undefined,
       answerSubmitted: false,
       winCount: 0,
@@ -74,53 +69,57 @@ export default {
     }
   },
   computed: {
-    answers(){
-      var answers = JSON.parse(JSON.stringify(this.incorrectAnswers));
-      answers.splice(Math.round(Math.random() * answers.length), 0, this.correctAnswer); //Splice is used to change array elements based in their position.
+    question() {
+      return this.questions[this.currentQuestionIndex]?.question;
+    },
+    incorrectAnswers() {
+      return this.questions[this.currentQuestionIndex]?.incorrect_answers;
+    },
+    correctAnswer() {
+      return this.questions[this.currentQuestionIndex]?.correct_answer;
+    },
+    answers() {
+      const answers = this.incorrectAnswers ? [...this.incorrectAnswers] : [];
+      answers.splice(Math.round(Math.random() * answers.length), 0, this.correctAnswer);
       return answers;
     }
   },
   methods: {
-
-    submitAnswer(){
-      if(!this.chosenAnswer){
+    submitAnswer() {
+      if (!this.chosenAnswer) {
         alert('Pick one of the options.');
-      }else{
+      } else {
         this.answerSubmitted = true;
-        if(this.chosenAnswer == this.correctAnswer){
+        if (this.chosenAnswer == this.correctAnswer) {
           this.winCount++;
-
-        }else{
+        } else {
           this.loseCount++;
-
         }
       }
     },
-
-    getNewQuestion(){
-
+    getNewQuestion() {
+      // Completed all the questions, do the request again.
+      if (this.currentQuestionIndex >= this.questions.length - 1) {
+        this.axios.get('https://opentdb.com/api.php?amount=10')
+          .then((response) => {
+            this.questions = response.data.results;
+            this.currentQuestionIndex = 0;
+            this.resetQuestionState();
+          });
+      } else {
+        this.currentQuestionIndex++;
+        this.resetQuestionState();
+      }
+    },
+    resetQuestionState() {
       this.answerSubmitted = false;
       this.chosenAnswer = undefined;
-      this.question = undefined;
-
-      this.axios
-      .get('https://opentdb.com/api.php?amount=1')
-      .then((response) => {
-      this.question = response.data.results[0].question;
-      this.incorrectAnswers = response.data.results[0].incorrect_answers;
-      this.correctAnswer = response.data.results[0].correct_answer;
-    })
-
     }
-
   },
-  created(){
+  created() {
     this.getNewQuestion();
-    }  
-  
-
+  }
 }
-
 </script>
 
 <style lang="scss">
