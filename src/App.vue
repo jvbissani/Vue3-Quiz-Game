@@ -42,12 +42,6 @@
 
         <button @click="this.getNewQuestion()" class="send" type="button">Next Question</button>
 
-        <button
-        @click="this.getNewQuestion()"
-        class="send"
-        type="button">Refresh
-        </button>
-
       </section>
 
     </template>
